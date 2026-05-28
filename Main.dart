@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:math';
 void main() {
   runApp(const CatTranslatorApp());
 }
@@ -23,6 +24,13 @@ class CatTranslatorScreen extends StatefulWidget {
 class _CatTranslatorScreen extends State<CatTranslatorScreen>{
   String StatusText='Нажми кнопку записи';
   Timer? timer;
+  Random random=Random();
+  // wave - список высот столбиков звуковой волны.
+// List<double> значит: список чисел с дробной частью.
+// List.generate создает список автоматически.
+// 18 - количество столбиков.
+// (index) => 20 значит: каждый столбик сначала высотой 20.
+List<double> wave = List.generate(18, (index) => 20);
   bool analizing=false;
   double progress=0;
   String StatusTranslate='перевод появится здесь';
@@ -30,8 +38,52 @@ class _CatTranslatorScreen extends State<CatTranslatorScreen>{
     setState((){
       StatusText='Запись началась';
       StatusTranslate='Анализирую';
+      analizing=true;
+      progress=0;
     });
-  }
+  // Timer.periodic запускает код снова и снова.
+  // Здесь код будет запускаться каждые 200 миллисекунд.
+  timer = Timer.periodic(const Duration(milliseconds: 200), (Timer timer) {
+    // Каждый "тик" таймера обновляет экран.
+    setState(() {
+      // Увеличиваем прогресс на 0.05.
+      // Если было 0.20, станет 0.25.
+      progress = progress + 0.05;
+      // Пересоздаем список высот для волны.
+  // Каждый раз получаются новые случайные высоты,
+  // поэтому столбики будто двигаются.
+  wave = List.generate(18, (index) {
+    // random.nextInt(70) дает случайное целое число от 0 до 69.
+    // 12 + ... нужно, чтобы столбик никогда не был совсем нулевым.
+    // toDouble() превращает целое число в double,
+    // потому что высота AnimatedContainer ожидает double.
+    return 12 + random.nextInt(70).toDouble();
+    });
+      });
+
+    // Проверяем: дошел ли прогресс до конца.
+    if (progress >= 1) {
+      // Останавливаем таймер, чтобы он не работал бесконечно.
+      timer.cancel();
+
+      // Финальное обновление экрана.
+      setState(() {
+        // Анализ закончился.
+        analizing = false;
+
+        // Фиксируем прогресс на 100%.
+        progress = 1;
+
+        // Показываем финальный статус.
+        StatusText = 'Перевод готов';
+
+        // Пока перевод простой. На следующих занятиях
+        // мы заменим его на более умный случайный результат.
+        StatusTranslate = 'Я требую вкусняшку.';
+      });
+    }
+  });
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -79,8 +131,55 @@ class _CatTranslatorScreen extends State<CatTranslatorScreen>{
                     children: [
                       Text(
                         '🐱',
+                        
                         style: TextStyle(fontSize: 76),
                       ),
+                      SizedBox(
+  height: 86,
+
+  // Row ставит столбики в ряд слева направо.
+  child: Row(
+    // Центрируем волну по горизонтали.
+    mainAxisAlignment: MainAxisAlignment.center,
+
+    // Центрируем столбики по вертикали внутри области высотой 86.
+    crossAxisAlignment: CrossAxisAlignment.center,
+
+    // wave.map берет каждую высоту из списка wave
+    // и превращает ее в AnimatedContainer.
+    children: wave.map((height) {
+      // Один столбик звуковой волны.
+      return AnimatedContainer(
+        // Длительность анимации изменения высоты.
+        // Благодаря этому столбик меняется плавно, а не резко.
+        duration: const Duration(milliseconds: 160),
+
+        // Ширина одного столбика.
+        width: 7,
+
+        // Высота столбика приходит из списка wave.
+        height: height,
+
+        // Отступы слева и справа между столбиками.
+        margin: const EdgeInsets.symmetric(horizontal: 3),
+
+        // Внешний вид столбика.
+        decoration: BoxDecoration(
+          // Если идет анализ, волна синяя.
+          // Если анализ не идет, волна фиолетовая.
+          color: analizing
+              ? const Color(0xFF5B8CFF)
+              : const Color(0xFF7A5CFF),
+
+          // Скругляем столбики, чтобы они были похожи на аудио-волну.
+          borderRadius: BorderRadius.circular(20),
+        ),
+      );
+    // map возвращает Iterable, а Row нужны children в виде List.
+    // Поэтому в конце пишем .toList().
+    }).toList(),
+  ),
+),
                       SizedBox(height: 12),
                       Text(
                         StatusText,
@@ -90,6 +189,12 @@ class _CatTranslatorScreen extends State<CatTranslatorScreen>{
                         ),
                         textAlign: TextAlign.center,
                       ),
+                       const SizedBox(height: 18),
+                      LinearProgressIndicator(
+                      value:progress,
+                        minHeight:8,
+                        borderRadius:BorderRadius.circular(20)
+                      )
                     ],
                   ),
                 ),
