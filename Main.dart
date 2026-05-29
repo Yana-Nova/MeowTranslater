@@ -30,9 +30,62 @@ class _CatTranslatorScreen extends State<CatTranslatorScreen>{
 // List.generate создает список автоматически.
 // 18 - количество столбиков.
 // (index) => 20 значит: каждый столбик сначала высотой 20.
-List<double> wave = List.generate(18, (index) => 20);
+List<double> wave = List.generate(30, (index) => 20);
   bool analizing=false;
   double progress=0;
+  // detectedMood - настроение, которое "нашел ИИ".
+// Сначала настроение неизвестно, потому что анализ еще не запускали.
+String detectedMood = 'неизвестно';
+
+// detectedTone - тон кошачьего звука.
+// Например: низкий, средний, высокий.
+String detectedTone = 'неизвестно';
+
+// detectedVolume - громкость звука.
+// Например: тихий, обычный, громкий.
+String detectedVolume = 'неизвестно';
+
+// confidence - уверенность "ИИ" в процентах.
+// int значит целое число.
+int confidence = 0;
+  List<String> moods=[
+    'голодная', 'сердитая', 'веселая', 'сонная'
+  ];
+  Map<String,List<String>>TranslationMood={
+    'голодная': [
+    'Моя миска выглядит подозрительно пустой.',
+    'Человек, пора открыть пакетик с кормом.',
+    'Я не драматизирую. Я действительно голодная.',
+  ],
+    'сердитая': [
+    'Я сейчас не в настроении для переговоров.',
+    'Отойди на безопасное расстояние.',
+    'Это моя территория. И диван тоже мой.',
+  ],
+    'веселая': [
+    'Мне хорошо. Продолжай в том же духе.',
+    'Ты сегодня отличный человек.',
+    'Можно еще немного погладить.',
+  ],
+    'сонная': [
+    'Не трогай меня, я почти сплю.',
+    'Я проснулась только чтобы напомнить, что я главная.',
+    'Сделай потише, у меня важный сон.',
+  ],
+  };
+  // Список возможных тонов звука.
+final List<String> tones = [
+  'низкий',
+  'средний',
+  'высокий',
+];
+
+// Список возможной громкости.
+final List<String> volumes = [
+  'тихий',
+  'обычный',
+  'громкий',
+];
   String StatusTranslate='перевод появится здесь';
   void startRecord(){
     setState((){
@@ -52,7 +105,7 @@ List<double> wave = List.generate(18, (index) => 20);
       // Пересоздаем список высот для волны.
   // Каждый раз получаются новые случайные высоты,
   // поэтому столбики будто двигаются.
-  wave = List.generate(18, (index) {
+  wave = List.generate(30, (index) {
     // random.nextInt(70) дает случайное целое число от 0 до 69.
     // 12 + ... нужно, чтобы столбик никогда не был совсем нулевым.
     // toDouble() превращает целое число в double,
@@ -66,24 +119,61 @@ List<double> wave = List.generate(18, (index) => 20);
       // Останавливаем таймер, чтобы он не работал бесконечно.
       timer.cancel();
 
-      // Финальное обновление экрана.
-      setState(() {
-        // Анализ закончился.
-        analizing = false;
-
-        // Фиксируем прогресс на 100%.
-        progress = 1;
-
-        // Показываем финальный статус.
-        StatusText = 'Перевод готов';
-
-        // Пока перевод простой. На следующих занятиях
-        // мы заменим его на более умный случайный результат.
-        StatusTranslate = 'Я требую вкусняшку.';
-      });
+      finishAnalysis();
+       
     }
+  });}
+    // finishAnalysis запускается, когда прогресс дошел до конца.
+// Эта функция делает финальный "AI-результат".
+void finishAnalysis() {
+  // Выбираем случайное настроение из списка moods.
+  final String mood = moods[random.nextInt(moods.length)];
+
+  // Выбираем случайный тон из списка tones.
+  final String tone = tones[random.nextInt(tones.length)];
+
+  // Выбираем случайную громкость из списка volumes.
+  final String volume = volumes[random.nextInt(volumes.length)];
+
+  // Берем список переводов, подходящий под выбранное настроение.
+  // Например, если mood = 'голодная',
+  // то possibleTranslations будет списком голодных переводов.
+  final List<String> possibleTranslations = TranslationMood[mood]!;
+
+  // Выбираем один случайный перевод из подходящего списка.
+  final String finalTranslation =
+      possibleTranslations[random.nextInt(possibleTranslations.length)];
+
+  // Обновляем экран финальными результатами анализа.
+  setState(() {
+    // Анализ больше не идет.
+    analizing = false;
+
+    // Прогресс полный.
+    progress = 1;
+
+    // Статус под кошкой.
+    StatusText = 'Перевод готов';
+
+    // Показываем найденное настроение.
+    detectedMood = mood;
+
+    // Показываем найденный тон.
+    detectedTone = tone;
+
+    // Показываем найденную громкость.
+    detectedVolume = volume;
+
+    // Уверенность будет от 82 до 98.
+    // random.nextInt(17) дает число от 0 до 16.
+    // 82 + это число = 82...98.
+    confidence = 82 + random.nextInt(17);
+
+    // Показываем финальный перевод.
+    StatusTranslate = finalTranslation;
   });
 }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -207,6 +297,7 @@ List<double> wave = List.generate(18, (index) => 20);
                     child: const Text('Записать мяу'),
                   ),
                 ),
+                
                 const SizedBox(height: 18),
                 Container(
                   width: double.infinity,
